@@ -1,0 +1,52 @@
+{
+  "raw_rows": 541909,
+  "clean_rows": 397884,
+  "customers": 4338,
+  "products": 3665,
+  "revenue_gbp": 8911407.9,
+  "date_range": [
+    "2010-12-01",
+    "2011-12-09"
+  ],
+  "m1_retention_customer_weighted": 0.2365,
+  "m1_retention_unweighted_mean": 0.2148,
+  "m3_retention_customer_weighted": 0.2692,
+  "m3_retention_unweighted_mean": 0.2456,
+  "funnel": {
+    "All buyers": 4338,
+    "Repeat buyers (2+ orders)": 2845,
+    "Loyal buyers (5+ orders)": 1114
+  },
+  "rfm_segments": {
+    "At risk (valuable, lapsing)": {
+      "customers": 910,
+      "revenue_share": 0.163
+    },
+    "Champions": {
+      "customers": 1319,
+      "revenue_share": 0.73
+    },
+    "Lapsed": {
+      "customers": 1240,
+      "revenue_share": 0.04
+    },
+    "Loyal / growing": {
+      "customers": 610,
+      "revenue_share": 0.057
+    },
+    "New / one-off": {
+      "customers": 259,
+      "revenue_share": 0.01
+    }
+  },
+  "top_20pct_customers_revenue_share": 0.746,
+  "trending_top20_christmas_items": 9,
+  "weekly_points": 52,
+  "forecast_origins": 13,
+  "forecast_mape_4wk_ahead": {
+    "holt_damped": 0.2178,
+    "naive_last": 0.2137,
+    "mean_4wk": 0.1761
+  },
+  "forecast_holt_beats_mean4wk_origins": 3
+}

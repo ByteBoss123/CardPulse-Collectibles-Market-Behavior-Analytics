@@ -1,90 +1,43 @@
-# CardPulse: Collectibles Market Behavior Analytics
+# CardPulse: Customer Behavior and Demand Analytics for an Online Retailer
 
-End-to-end behavioral analytics pipeline built to demonstrate the core data
-science skills required for a consumer/marketplace analytics role — specifically
-the kind of product analytics work Fanatics Collectibles does at scale.
+Retention, segmentation, product momentum and demand forecasting, the core product-analytics questions for a
+marketplace. Built with a collectibles marketplace in mind, but the data is a UK online giftware retailer: no
+public collectibles transaction data exists, and this is the closest real, customer-level e-commerce log.
 
-## Problem
+**Data.** UCI Online Retail (Chen, 2015): 541,909 transaction lines, Dec 2010 to Dec 2011, fetched and checksum-
+verified by `data/download.sh`. After removing cancellations, rows without a customer id and non-positive
+quantities or prices: **397,884 lines, 4,338 customers, £8.91M revenue**.
 
-Online collectibles marketplaces need to answer three questions to run efficiently:
-1. **Who is buying and coming back?** — retention and cohort analysis
-2. **What is trending?** — product momentum signals for inventory and pricing decisions
-3. **How much will we sell?** — demand forecasting for supply planning
+## Results (`outputs/summary.json`)
 
-## Dataset
-
-UCI Online Retail Dataset (real UK e-commerce transactions, 2010–2011):
-- 541,909 raw transactions → 397,884 after cleaning (removed cancellations, nulls, negative quantities)
-- 4,338 unique customers
-- 3,877 unique products
-- £8.9M total revenue
-- Cleaned with pandas: cancelled orders removed (InvoiceNo prefix "C"), CustomerID nulls dropped, Quantity/UnitPrice <= 0 excluded
-
-## What's built
-
-### 1. Cohort Retention Analysis
-Monthly cohort retention matrix tracking what % of customers from each acquisition
-cohort returned in subsequent months. Key finding: average month-1 retention is 20.6%,
-stabilizing around 23% by month 3 — consistent with e-commerce industry benchmarks.
-
-### 2. Purchase Funnel
-- All buyers: 4,338
-- Repeat buyers (2+ orders): 2,845 (65.6%)
-- Loyal buyers (5+ orders): 1,114 (25.7%)
-
-### 3. RFM Segmentation
-Customers scored on Recency, Frequency, and Monetary value and segmented into:
-- Champions: 1,679 (38.7%)
-- Potential: 1,368 (31.5%)
-- At Risk: 1,291 (29.8%)
-
-### 4. Trending Products
-Revenue momentum score computed as (recent 90-day revenue - prior 90-day revenue) /
-prior 90-day revenue, filtered to products with >£50 prior-period baseline to
-exclude noise. Top trending products identified with momentum scores up to 40x.
-
-### 5. Demand Forecast
-Holt-Winters additive exponential smoothing on weekly revenue (53 weeks):
-- Test MAPE: 21.3%
-- Naive baseline MAPE: 24.6%
-- Improvement over naive: 13.5%
-
-Note: The short series (53 weeks, only 10 test points) limits forecast precision.
-Holt-Winters was chosen over XGBoost specifically because gradient boosting
-requires substantially more observations to generalize — using the right model
-for the data size is the point.
-
-## Stack
-- Python, pandas, NumPy
-- statsmodels (Holt-Winters)
-- scikit-learn, XGBoost
-- MLflow (experiment tracking)
-- Tableau (dashboard)
-
-## Files
-```
-data/
-  retail_clean.csv          — cleaned transaction data
-outputs/
-  cohort_retention.csv      — monthly cohort retention matrix
-  purchase_funnel.csv       — funnel stage counts and rates
-  rfm_segments.csv          — per-customer RFM scores and segments
-  trending_products.csv     — top 20 trending products by momentum
-  weekly_revenue.csv        — weekly aggregated revenue, orders, customers
-  forecast_full_series.csv  — actual vs fitted/forecast for full series
-  revenue_forecast.csv      — test-set forecast vs actual
-models/
-  demand_model.joblib       — saved Holt-Winters model artifact
-```
-
-## How this maps to Fanatics Collectibles
-
-| Fanatics need | CardPulse equivalent |
+| Question | Answer |
 |---|---|
-| User retention analysis | Cohort retention matrix |
-| Purchase funnel analysis | 3-stage funnel (all/repeat/loyal) |
-| Product trend detection | Revenue momentum scoring |
-| Demand forecasting | Holt-Winters weekly forecast |
-| Customer segmentation | RFM scoring + Champions/Potential/At Risk tiers |
-| BI dashboard | Tableau dashboard (5 views) |
-| Statistical rigor | MAPE vs naive baseline comparison, cohort sizing |
+| Who comes back? | Month-1 retention **23.7%** (customer-weighted across monthly cohorts; 21.5% simple average), month-3 26.9%. Cells falling in the 9-day December 2011 month are excluded so they don't read as churn |
+| How concentrated is revenue? | Top 20% of customers drive **74.6%** of revenue |
+| Repeat behavior | 65.6% of customers ordered twice or more (2,845); 25.7% five or more (1,114) |
+| Segments (RFM quartiles) | Champions: 1,319 customers, **73% of revenue**. At-risk (valuable but lapsing): 910 customers, 16% of revenue, the main win-back target |
+| What's trending? | 9 of the top 20 "momentum" products (last 90 days vs prior 90) are Christmas items, and most of the rest are hot-water bottles and hand warmers. With one year of data, **momentum here is seasonality**; a real trend signal needs year-over-year comparison |
+| Can we forecast weekly revenue? | Rolling-origin test, 4 weeks ahead from 13 origins: damped Holt **21.8% MAPE**, last-week naive 21.4%, **4-week average 17.6%**. The simplest baseline wins; 52 weeks is too short for a seasonal model to learn anything |
+
+## What changed in the October 2026 rebuild
+
+The repo previously held only a zip of outputs, with no code. This version is a single reproducible pipeline,
+and rerunning it changed three conclusions:
+
+- **The forecast result reversed.** The earlier README reported Holt-Winters beating a naive forecast by 13.5% on
+  one 10-week test window that ended with a partial week. Across 13 rolling origins, with partial weeks removed,
+  it loses to a 4-week average.
+- **Retention is now defined.** The earlier 20.6% month-1 figure had no stated weighting and included the partial
+  final month; both versions are now reported.
+- **Trending products are labeled as seasonal**, with a Christmas-excluded list in
+  `outputs/trending_products_ex_christmas.csv`.
+
+The earlier Looker Studio PDF was removed: it showed a "System Error" panel and the superseded numbers.
+
+## Run
+
+```
+pip install -r requirements.txt
+bash data/download.sh
+python src/pipeline.py     # about 30 seconds; writes outputs/
+```
